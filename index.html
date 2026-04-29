@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Satsang Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --saffron: #E8650A;
+  --saffron-light: #FFF3EB;
+  --saffron-mid: #F28C47;
+  --saffron-dark: #B84E08;
+  --green: #2E7D32;
+  --green-light: #E8F5E9;
+  --bg: #F7F4F0;
+  --surface: #FFFFFF;
+  --surface2: #F2EEE8;
+  --border: #E5DDD3;
+  --border2: #D4C8BB;
+  --text: #1A1208;
+  --text2: #6B5E4E;
+  --text3: #A8998A;
+  --required: #D32F2F;
+  --required-bg: #FFF5F5;
+  --required-border: #FFCDD2;
+  --success: #2E7D32;
+  --r: 16px;
+  --r-sm: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+
+/* ── SETUP SCREEN ── */
+.setup-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 20px 40px;background:linear-gradient(160deg,#FFF8F3 0%,#F7F4F0 60%);}
+.setup-hero{text-align:center;margin-bottom:28px;padding-top:20px;}
+.setup-emblem{font-size:52px;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(232,101,10,0.3));}
+.setup-title{font-family:'Nunito',sans-serif;font-size:26px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
+.setup-sub{font-size:14px;color:var(--text2);margin-top:6px;line-height:1.5;}
+.setup-card{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);padding:22px;width:100%;max-width:400px;margin-bottom:16px;}
+.setup-card-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.step-list{list-style:none;display:flex;flex-direction:column;gap:14px;}
+.step-li{display:flex;gap:12px;align-items:flex-start;}
+.step-badge{min-width:26px;height:26px;border-radius:50%;background:var(--saffron);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.step-text{font-size:13px;color:var(--text2);line-height:1.6;}
+.step-text a{color:var(--saffron);font-weight:600;text-decoration:none;}
+.step-text strong{color:var(--text);font-weight:600;}
+.url-field{width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:'Nunito Sans',sans-serif;background:var(--surface2);color:var(--text);margin-bottom:12px;transition:border-color 0.2s;}
+.url-field:focus{outline:none;border-color:var(--saffron);}
+.connect-btn{width:100%;padding:15px;background:var(--saffron);color:#fff;border:none;border-radius:var(--r);font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(232,101,10,0.35);transition:transform 0.1s,box-shadow 0.1s;}
+.connect-btn:active{transform:scale(0.97);box-shadow:0 2px 8px rgba(232,101,10,0.25);}
+details>summary{font-size:13px;color:var(--text3);cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px;}
+details>summary::before{content:'▶';font-size:10px;transition:transform 0.2s;}
+details[open]>summary::before{transform:rotate(90deg);}
+.script-area{font-family:monospace;font-size:10px;min-height:180px;background:#1A1208;color:#B8E09A;border:none;border-radius:10px;padding:14px;line-height:1.6;width:100%;margin-top:8px;resize:none;}
+.copy-btn{margin-top:8px;width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;display:none;flex-direction:column;}
+#app.visible{display:flex;}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--saffron);padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 8px rgba(232,101,10,0.3);}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-icon{font-size:24px;line-height:1;}
+.topbar-title{font-family:'Nunito',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.3px;}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,0.75);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.sync-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.2);border-radius:99px;padding:5px 10px;font-size:11px;color:#fff;font-weight:600;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#A5D6A7;}
+.sync-dot.busy{background:#FFE082;animation:pulse 1s infinite;}
+.sync-dot.err{background:#EF9A9A;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+.nav-btn{flex:1;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;transition:color 0.15s;}
+.nav-btn .nav-icon{font-size:22px;transition:transform 0.15s;}
+.nav-btn.active{color:var(--saffron);}
+.nav-btn.active .nav-icon{transform:scale(1.15);}
+
+/* ── SCROLL AREA ── */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.page{display:none;padding:16px 16px 24px;}
+.page.visible{display:block;}
+
+/* ── SECTION HEADER ── */
+.section-head{font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin:20px 0 10px;display:flex;align-items:center;gap:6px;}
+.section-head:first-child{margin-top:4px;}
+
+/* ── FIELD CARD ── */
+.field-card{background:var(--surface);border-radius:var(--r);border:2px solid var(--border);margin-bottom:12px;overflow:hidden;transition:border-color 0.2s;}
+.field-card.required-field{border-color:var(--required-border);background:var(--required-bg);}
+.field-card.filled{border-color:#C8E6C9;background:#fff;}
+.field-header{padding:12px 14px 0;display:flex;align-items:center;justify-content:space-between;}
+.field-label{font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;}
+.req-star{color:var(--required);font-size:14px;line-height:1;}
+.req-badge{font-size:10px;background:var(--required);color:#fff;padding:1px 6px;border-radius:99px;font-weight:700;letter-spacing:0.3px;}
+.filled-badge{font-size:10px;background:#C8E6C9;color:#2E7D32;padding:1px 6px;border-radius:99px;font-weight:700;}
+.field-body{padding:10px 14px 14px;}
+
+/* ── INPUTS ── */
+.f-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;font-family:'Nunito Sans',sans-serif;background:var(--surface2);color:var(--text);appearance:none;-webkit-appearance:none;transition:border-color 0.2s;}
+.f-input:focus{outline:none;border-color:var(--saffron);}
+.f-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath fill='%23A8998A' d='M6 7L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
+.f-textarea{min-height:72px;resize:vertical;line-height:1.5;}
+
+/* ── PARTS PICKER ── */
+.parts-picker{display:flex;flex-direction:column;gap:8px;}
+.parts-row{display:flex;align-items:center;gap:10px;}
+.parts-label{font-size:13px;color:var(--text2);width:60px;flex-shrink:0;}
+.range-wrap{flex:1;position:relative;}
+.parts-range{width:100%;height:6px;border-radius:99px;appearance:none;-webkit-appearance:none;background:var(--border);cursor:pointer;}
+.parts-range::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--saffron);box-shadow:0 2px 6px rgba(232,101,10,0.4);cursor:pointer;}
+.parts-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--saffron);border:none;box-shadow:0 2px 6px rgba(232,101,10,0.4);}
+.parts-val{font-family:'Nunito',sans-serif;font-weight:700;font-size:18px;color:var(--saffron);min-width:44px;text-align:right;}
+.parts-none-btn{padding:8px 16px;border-radius:99px;border:2px solid var(--border);background:var(--surface2);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;transition:all 0.15s;}
+.parts-none-btn.active{background:var(--surface2);border-color:var(--saffron-dark);color:var(--saffron-dark);}
+.parts-display{font-family:'Nunito',sans-serif;font-weight:700;font-size:22px;color:var(--saffron);text-align:center;padding:4px 0;}
+
+/* ── RADIO OPTIONS ── */
+.radio-grid{display:flex;flex-direction:column;gap:6px;}
+.radio-item{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:var(--r-sm);border:2px solid transparent;cursor:pointer;background:var(--surface2);transition:all 0.15s;}
+.radio-item:active{transform:scale(0.98);}
+.radio-circle{width:20px;height:20px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.radio-circle::after{content:'';width:9px;height:9px;border-radius:50%;background:#fff;display:none;}
+.radio-item.sel{background:var(--saffron-light);border-color:var(--saffron-mid);}
+.radio-item.sel .radio-circle{background:var(--saffron);border-color:var(--saffron);}
+.radio-item.sel .radio-circle::after{display:block;}
+.radio-text{font-size:14px;color:var(--text);font-weight:500;flex:1;}
+.other-field{flex:1;padding:6px 10px;font-size:14px;border:none;border-bottom:2px solid var(--border);background:transparent;color:var(--text);font-family:'Nunito Sans',sans-serif;}
+.other-field:focus{outline:none;border-bottom-color:var(--saffron);}
+
+/* ── SAVE BUTTON ── */
+.save-btn-wrap{padding:4px 0 16px;}
+.save-btn{width:100%;padding:17px;background:var(--saffron);color:#fff;border:none;border-radius:var(--r);font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;cursor:pointer;letter-spacing:0.2px;box-shadow:0 6px 20px rgba(232,101,10,0.38);transition:transform 0.1s,box-shadow 0.1s,background 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.save-btn:active{transform:scale(0.97);box-shadow:0 2px 8px rgba(232,101,10,0.2);}
+.save-btn:disabled{background:var(--text3);box-shadow:none;cursor:not-allowed;}
+.save-btn.saving{background:var(--saffron-mid);}
+.spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.required-notice{background:var(--required-bg);border:1.5px solid var(--required-border);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--required);font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat-box{background:var(--surface);border-radius:var(--r);padding:13px 10px;text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow);}
+.stat-num{font-family:'Nunito',sans-serif;font-size:26px;font-weight:800;color:var(--saffron);line-height:1;}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;font-weight:600;}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:var(--surface);border-radius:var(--r);border:1.5px solid var(--border);padding:14px;margin-bottom:14px;}
+.filter-title{font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;}
+.filter-selects{display:flex;gap:8px;}
+.filter-selects select{flex:1;font-size:13px;padding:9px 30px 9px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--text);font-family:'Nunito Sans',sans-serif;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23A8998A' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+
+/* ── SUBJECT INSIGHT ── */
+.insight-box{background:linear-gradient(135deg,var(--saffron-light),#FFF8EE);border:2px solid var(--saffron-mid);border-radius:var(--r);padding:14px;margin-bottom:14px;display:none;}
+.insight-box.visible{display:block;}
+.insight-title{font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--saffron-dark);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.insight-stat{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.ins-badge{padding:4px 12px;border-radius:99px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;}
+.ins-range{background:var(--saffron);color:#fff;}
+.ins-special{background:#fff;color:var(--saffron-dark);border:2px solid var(--saffron-mid);}
+.ins-label{font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:600;}
+.ins-total{font-size:12px;color:var(--text2);margin-top:6px;padding-top:8px;border-top:1px solid rgba(232,101,10,0.2);}
+
+/* ── ENTRY CARDS ── */
+.entry-card{background:var(--surface);border-radius:var(--r);border:1.5px solid var(--border);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
+.entry-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.entry-subj{font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text);flex:1;padding-right:8px;line-height:1.3;}
+.entry-date{font-size:11px;color:var(--text3);white-space:nowrap;font-weight:600;}
+.entry-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.tag{font-size:11px;padding:3px 9px;border-radius:99px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);font-weight:600;}
+.tag.loc{background:var(--green-light);color:var(--green);border-color:#A5D6A7;}
+.tag.time{background:#EDE7F6;color:#512DA8;border-color:#CE93D8;}
+.entry-parts{font-size:13px;color:var(--text2);font-weight:500;}
+.entry-parts span{font-family:'Nunito',sans-serif;font-weight:700;color:var(--saffron);font-size:15px;}
+.entry-remark{font-size:12px;color:var(--text3);margin-top:5px;font-style:italic;}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3);}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+.empty-txt{font-size:14px;line-height:1.6;}
+
+/* ── MANAGE ── */
+.manage-item{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--surface2);border-radius:var(--r-sm);border:1.5px solid var(--border);margin-bottom:7px;}
+.manage-name{font-size:14px;font-weight:500;color:var(--text);}
+.rm-btn{padding:5px 12px;background:none;border:1.5px solid #FFCDD2;color:var(--required);border-radius:99px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.add-row{display:flex;gap:8px;margin-bottom:12px;}
+.add-row input{flex:1;padding:11px 13px;border:2px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:'Nunito Sans',sans-serif;background:var(--surface2);color:var(--text);}
+.add-row input:focus{outline:none;border-color:var(--saffron);}
+.add-btn{padding:11px 18px;background:var(--saffron);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* ── EXPORT ── */
+.export-card{background:var(--surface);border-radius:var(--r);border:1.5px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.export-card-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.btn-exp{width:100%;padding:13px;margin-bottom:8px;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform 0.1s;}
+.btn-exp:active{transform:scale(0.97);}
+.btn-primary-exp{background:var(--saffron);color:#fff;border:none;box-shadow:0 4px 14px rgba(232,101,10,0.3);}
+.btn-outline-exp{background:var(--surface2);color:var(--text);border:2px solid var(--border);}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;}
+.summary-subj{font-size:13px;color:var(--text);font-weight:500;flex:1;padding-right:10px;}
+.summary-count{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--saffron);}
+.summary-parts{font-size:11px;color:var(--text3);text-align:right;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(30px);background:#1A1208;color:#fff;padding:12px 22px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:88vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.25);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--required);}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SETUP SCREEN ═══════════ -->
+<div id="setup-screen">
+  <div class="setup-wrap">
+    <div class="setup-hero">
+      <div class="setup-emblem">🕉️</div>
+      <div class="setup-title">Satsang Tracker</div>
+      <div class="setup-sub">Logs every session straight to your<br>Google Sheet — any phone, any device.</div>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-card-title">⚡ One-time setup</div>
+      <ul class="step-list">
+        <li class="step-li"><div class="step-badge">1</div><div class="step-text">Open <a href="https://script.google.com" target="_blank">script.google.com</a>, create a <strong>New project</strong>, delete the default code, and paste the Apps Script code (expand below).</div></li>
+        <li class="step-li"><div class="step-badge">2</div><div class="step-text">Click <strong>Deploy → New deployment → Web app</strong>. Set <em>Execute as</em>: <strong>Me</strong>, <em>Access</em>: <strong>Anyone</strong>. Click Deploy &amp; Authorize.</div></li>
+        <li class="step-li"><div class="step-badge">3</div><div class="step-text">Copy the <strong>Web App URL</strong> and paste it below. Done! Your Google Sheet is auto-created.</div></li>
+      </ul>
+    </div>
+
+    <div class="setup-card">
+      <label style="display:block;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;">Paste your Web App URL here</label>
+      <input class="url-field" type="text" id="webapp-url" placeholder="https://script.google.com/macros/s/...">
+      <button class="connect-btn" onclick="connectSheet()">Connect to Google Sheets →</button>
+    </div>
+
+    <div class="setup-card">
+      <details>
+        <summary style="font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--text2);">Show Apps Script code to paste</summary>
+        <textarea class="script-area" id="apps-script-code" readonly></textarea>
+        <button class="copy-btn" onclick="copyScript()">📋 Copy script to clipboard</button>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon">🕉️</div>
+      <div>
+        <div class="topbar-title">Satsang Tracker</div>
+        <div class="topbar-sub" id="sheet-label">Connecting…</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-pill"><div class="sync-dot" id="sync-dot"></div><span id="sync-txt">Syncing</span></div>
+    </div>
+  </div>
+
+  <div class="scroll-area">
+
+    <!-- ── LOG PAGE ── -->
+    <div id="page-log" class="page visible">
+      <div id="req-notice" class="required-notice" style="display:none;">⚠ Please fill all fields marked <strong>REQUIRED</strong> before saving.</div>
+
+      <!-- DATE -->
+      <div class="field-card required-field" id="fc-date">
+        <div class="field-header"><span class="field-label">📅 Date <span class="req-star">★</span></span><span class="req-badge" id="b-date">REQUIRED</span></div>
+        <div class="field-body"><input class="f-input" type="date" id="f-date" onchange="markFilled('fc-date','b-date')"></div>
+      </div>
+
+      <!-- SESSION TIME -->
+      <div class="field-card required-field" id="fc-time">
+        <div class="field-header"><span class="field-label">🕐 Session Time <span class="req-star">★</span></span><span class="req-badge" id="b-time">REQUIRED</span></div>
+        <div class="field-body">
+          <select class="f-input f-select" id="f-time" onchange="markFilled('fc-time','b-time')">
+            <!-- <option value="">Choose time of day…</option> -->
+            <option>Morning</option><option>Evening</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="field-card required-field" id="fc-loc">
+        <div class="field-header"><span class="field-label">📍 Location <span class="req-star">★</span></span><span class="req-badge" id="b-loc">REQUIRED</span></div>
+        <div class="field-body"><div class="radio-grid" id="location-list"></div></div>
+      </div>
+
+      <!-- DVD SUBJECT -->
+      <div class="field-card required-field" id="fc-subj">
+        <div class="field-header"><span class="field-label">💿 DVD Subject <span class="req-star">★</span></span><span class="req-badge" id="b-subj">REQUIRED</span></div>
+        <div class="field-body"><div class="radio-grid" id="subject-list"></div></div>
+      </div>
+
+      <!-- DVD PARTS -->
+      <div class="field-card required-field" id="fc-parts">
+        <div class="field-header"><span class="field-label">🎬 DVD Parts Played <span class="req-star">★</span></span><span class="req-badge" id="b-parts">REQUIRED</span></div>
+        <div class="field-body">
+          <div class="parts-picker">
+            <div class="parts-display" id="parts-display">— Select below —</div>
+            <div class="parts-row">
+              <button class="parts-none-btn" id="none-btn" onclick="setPartsNone()">None</button>
+              <div class="range-wrap">
+                <input class="parts-range" type="range" id="f-parts-range" min="1" max="1000" value="1" oninput="updateParts(this.value)">
+              </div>
+              <div class="parts-val" id="parts-val">1</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0 2px;font-size:11px;color:var(--text3);font-weight:600;">
+              <span>1</span><span>250</span><span>500</span><span>750</span><span>1000</span>
+            </div>
+          </div>
+          <input type="hidden" id="f-parts" value="">
+        </div>
+      </div>
+
+      <!-- REMARKS -->
+      <div class="field-card" id="fc-remarks">
+        <div class="field-header"><span class="field-label">📝 Remarks</span><span style="font-size:11px;color:var(--text3);font-weight:600;">optional</span></div>
+        <div class="field-body"><textarea class="f-input f-textarea" id="f-remarks" placeholder="Any notes about this session…"></textarea></div>
+      </div>
+
+      <div class="save-btn-wrap">
+        <button class="save-btn" id="save-btn" onclick="submitLog()">
+          <span id="save-icon">💾</span> <span id="save-text">Save to Google Sheet</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── HISTORY PAGE ── -->
+    <div id="page-history" class="page">
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="filter-bar">
+        <div class="filter-title">🔍 Filter Sessions</div>
+        <div class="filter-selects">
+          <select id="filter-subj" onchange="renderHistory()">
+            <option value="">All subjects</option>
+          </select>
+          <select id="filter-loc" onchange="renderHistory()">
+            <option value="">All locations</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SUBJECT INSIGHT BOX -->
+      <div class="insight-box" id="insight-box">
+        <div class="insight-title">📊 Parts Analysis</div>
+        <div class="ins-label">Parts range played:</div>
+        <div class="insight-stat" id="insight-range"></div>
+        <div class="ins-label" id="special-label" style="display:none;">Individual parts also played:</div>
+        <div class="insight-stat" id="insight-specials"></div>
+        <div class="ins-total" id="insight-total"></div>
+      </div>
+
+      <div id="history-list"></div>
+    </div>
+
+    <!-- ── MANAGE PAGE ── -->
+    <div id="page-manage" class="page">
+      <div class="section-head">📍 Locations</div>
+      <div class="field-card">
+        <div class="field-body" style="padding-top:14px;">
+          <div class="add-row">
+            <input type="text" id="new-loc" placeholder="Add new location…">
+            <button class="add-btn" onclick="addItem('loc')">Add</button>
+          </div>
+          <div id="loc-list"></div>
+        </div>
+      </div>
+
+      <div class="section-head">💿 DVD Subjects</div>
+      <div class="field-card">
+        <div class="field-body" style="padding-top:14px;">
+          <div class="add-row">
+            <input type="text" id="new-subj" placeholder="Add new subject…">
+            <button class="add-btn" onclick="addItem('subj')">Add</button>
+          </div>
+          <div id="subj-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EXPORT PAGE ── -->
+    <div id="page-export" class="page">
+      <div class="export-card">
+        <div class="export-card-title">📊 Your Google Sheet</div>
+        <button class="btn-exp btn-primary-exp" onclick="openSheet()">🔗 Open in Google Sheets</button>
+        <button class="btn-exp btn-outline-exp" onclick="exportCSV()">⬇ Download as CSV</button>
+        <button class="btn-exp btn-outline-exp" onclick="refreshData()">🔄 Refresh from Sheet</button>
+        <button class="btn-exp btn-outline-exp" style="color:var(--required);border-color:var(--required-border);" onclick="disconnectApp()">⚙ Change Sheet URL</button>
+      </div>
+      <div class="export-card">
+        <div class="export-card-title">📈 Sessions by Subject</div>
+        <div id="summary-table"></div>
+      </div>
+    </div>
+
+  </div><!-- end scroll-area -->
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="showTab('log')"><span class="nav-icon">✏️</span>Log</button>
+    <button class="nav-btn" onclick="showTab('history')"><span class="nav-icon">📋</span>History</button>
+    <button class="nav-btn" onclick="showTab('manage')"><span class="nav-icon">⚙️</span>Manage</button>
+    <button class="nav-btn" onclick="showTab('export')"><span class="nav-icon">📤</span>Export</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── APPS SCRIPT ──
+const APPS_SCRIPT = `function doGet(e){return handleReq(e);}
+function doPost(e){return handleReq(e);}
+function handleReq(e){
+  try{
+    var b=e.postData?JSON.parse(e.postData.contents):e.parameter;
+    var ss=getOrCreate();
+    var r;
+    if(b.action==='addSession') r=addSession(ss,b);
+    else if(b.action==='getSessions') r=getSessions(ss);
+    else if(b.action==='getConfig') r=getConfig(ss);
+    else if(b.action==='saveConfig') r=saveConfig(ss,b);
+    else r={error:'Unknown action'};
+    return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
+  }catch(err){return ContentService.createTextOutput(JSON.stringify({error:err.toString()})).setMimeType(ContentService.MimeType.JSON);}
+}
+function getOrCreate(){
+  var files=DriveApp.getFilesByName('Satsang Sessions');
+  if(files.hasNext()) return SpreadsheetApp.open(files.next());
+  var ss=SpreadsheetApp.create('Satsang Sessions');
+  var sh=ss.getActiveSheet();sh.setName('Sessions');
+  sh.appendRow(['Date','Session Time','Location','DVD Subject','DVD Parts','Remarks','Logged At']);
+  sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#E8650A').setFontColor('#ffffff');
+  sh.setFrozenRows(1);sh.setColumnWidth(1,90);sh.setColumnWidth(4,200);sh.setColumnWidth(5,120);
+  var cfg=ss.insertSheet('Config');
+  cfg.appendRow(['Key','Value']);
+  cfg.appendRow(['locs','Gigantic Hall|Aaradhna Hall-1|Aaradhna Hall-2|CD Watching Hall -2 (Sec-4)']);
+  cfg.appendRow(['subjs','Brahmacharya Parayan|Brahmacharya Q & A|Niruma Soneri Satsang|Niruma Informal Satsang|Seva|Pratyaksha Dada|Break']);
+  cfg.appendRow(['sheetUrl',ss.getUrl()]);
+  return ss;
+}
+function addSession(ss,b){
+  var sh=ss.getSheetByName('Sessions')||ss.getSheets()[0];
+  sh.appendRow([b.date,b.time,b.loc,b.subj,b.parts,b.remarks||'',new Date().toISOString()]);
+  return{ok:true,sheetUrl:ss.getUrl()};
+}
+function getSessions(ss){
+  var sh=ss.getSheetByName('Sessions')||ss.getSheets()[0];
+  var d=sh.getDataRange().getValues(),rows=[];
+  for(var i=1;i<d.length;i++) rows.push({date:String(d[i][0]).split('T')[0]||d[i][0],time:d[i][1],loc:d[i][2],subj:d[i][3],parts:d[i][4],remarks:d[i][5],loggedAt:d[i][6]});
+  return{ok:true,sessions:rows.reverse(),sheetUrl:ss.getUrl()};
+}
+function getConfig(ss){
+  var cfg=ss.getSheetByName('Config');
+  if(!cfg) return{locs:[],subjs:[],sheetUrl:ss.getUrl()};
+  var d=cfg.getDataRange().getValues(),out={sheetUrl:ss.getUrl()};
+  for(var i=1;i<d.length;i++){
+    if(d[i][0]==='locs') out.locs=String(d[i][1]).split('|').filter(Boolean);
+    if(d[i][0]==='subjs') out.subjs=String(d[i][1]).split('|').filter(Boolean);
+    if(d[i][0]==='sheetUrl') out.sheetUrl=d[i][1];
+  }
+  return{ok:true,...out};
+}
+function saveConfig(ss,b){
+  var cfg=ss.getSheetByName('Config');
+  if(!cfg) return{error:'No config sheet'};
+  var d=cfg.getDataRange().getValues();
+  for(var i=1;i<d.length;i++){
+    if(d[i][0]==='locs'&&b.locs) cfg.getRange(i+1,2).setValue(b.locs.join('|'));
+    if(d[i][0]==='subjs'&&b.subjs) cfg.getRange(i+1,2).setValue(b.subjs.join('|'));
+  }
+  return{ok:true};
+}`;
+
+document.getElementById('apps-script-code').value = APPS_SCRIPT;
+
+// ── STATE ──
+let webAppUrl = localStorage.getItem('st_url') || '';
+let sessions   = JSON.parse(localStorage.getItem('st_sessions') || '[]');
+let locs       = JSON.parse(localStorage.getItem('st_locs') || '["Gigantic Hall","Aaradhna Hall-1","Aaradhna Hall-2","CD Watching Hall -2 (Sec-4)"]');
+let subjs      = JSON.parse(localStorage.getItem('st_subjs') || '["Brahmacharya Parayan","Brahmacharya Q & A","Niruma Soneri Satsang","Niruma Informal Satsang","Seva","Pratyaksha Dada","Break"]');
+let sheetUrl   = localStorage.getItem('st_sheet_url') || '';
+let partsValue = ''; // '' = not set, 'None', or number string
+
+function persist() {
+  localStorage.setItem('st_sessions', JSON.stringify(sessions));
+  localStorage.setItem('st_locs', JSON.stringify(locs));
+  localStorage.setItem('st_subjs', JSON.stringify(subjs));
+  if(sheetUrl) localStorage.setItem('st_sheet_url', sheetUrl);
+}
+
+// ── BOOT ──
+window.onload = function() {
+  if(webAppUrl) { bootApp(); }
+  else { document.getElementById('setup-screen').style.display=''; }
+  document.getElementById('f-date').value = todayStr();
+  markFilled('fc-date','b-date'); // date pre-filled
+};
+
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+
+function bootApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('f-date').value = todayStr();
+  markFilled('fc-date','b-date');
+  renderLogForm();
+  loadSheet();
+}
+
+function connectSheet() {
+  const url = document.getElementById('webapp-url').value.trim();
+  if(!url || !url.includes('script.google.com')) { showToast('⚠ Please enter a valid Apps Script URL','error'); return; }
+  webAppUrl = url; localStorage.setItem('st_url', webAppUrl);
+  bootApp();
+}
+
+function disconnectApp() {
+  if(!confirm('Change the Sheet URL? This will return you to setup.')) return;
+  webAppUrl = ''; localStorage.removeItem('st_url');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('setup-screen').style.display = '';
+}
+
+// ── SHEET API (with background queue) ──
+let saveQueue = [];
+let isSaving = false;
+
+async function sheetCall(body) {
+  const res = await fetch(webAppUrl, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  });
+  const text = await res.text();
+  return JSON.parse(text);
+}
+
+function setSyncState(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-txt');
+  dot.className = 'sync-dot' + (state==='busy'?' busy':state==='err'?' err':'');
+  txt.textContent = msg;
+}
+
+async function loadSheet() {
+  setSyncState('busy','Loading…');
+  try {
+    const [cfg, data] = await Promise.all([
+      sheetCall({action:'getConfig'}),
+      sheetCall({action:'getSessions'})
+    ]);
+    if(cfg.ok) {
+      if(cfg.locs?.length) { locs=cfg.locs; }
+      if(cfg.subjs?.length) { subjs=cfg.subjs; }
+      if(cfg.sheetUrl) { sheetUrl=cfg.sheetUrl; localStorage.setItem('st_sheet_url',sheetUrl); }
+    }
+    if(data.ok) {
+      sessions = data.sessions || [];
+      if(data.sheetUrl) { sheetUrl=data.sheetUrl; localStorage.setItem('st_sheet_url',sheetUrl); }
+    }
+    persist(); renderLogForm();
+    setSyncState('ok','Sheet synced');
+    document.getElementById('sheet-label').textContent = 'Satsang Sessions · Google Sheet';
+  } catch(e) {
+    setSyncState('err','Connection error');
+    document.getElementById('sheet-label').textContent = 'Sheet error — check URL';
+  }
+}
+
+async function refreshData() {
+  setSyncState('busy','Refreshing…');
+  try {
+    const data = await sheetCall({action:'getSessions'});
+    if(data.ok) { sessions=data.sessions||[]; persist(); renderHistory(); renderSummary(); }
+    setSyncState('ok','Refreshed');
+    showToast('✓ Refreshed from sheet','success');
+  } catch(e) { setSyncState('err','Refresh failed'); showToast('Refresh failed','error'); }
+}
+
+// ── PARTS PICKER ──
+function updateParts(val) {
+  partsValue = val;
+  document.getElementById('f-parts').value = val;
+  document.getElementById('parts-val').textContent = val;
+  document.getElementById('parts-display').textContent = 'Part ' + val;
+  document.getElementById('none-btn').classList.remove('active');
+  markFilled('fc-parts','b-parts');
+}
+
+function setPartsNone() {
+  partsValue = 'None';
+  document.getElementById('f-parts').value = 'None';
+  document.getElementById('parts-display').textContent = 'None (No parts played)';
+  document.getElementById('parts-val').textContent = '—';
+  document.getElementById('none-btn').classList.add('active');
+  markFilled('fc-parts','b-parts');
+}
+
+// ── FIELD FILL TRACKING ──
+function markFilled(cardId, badgeId) {
+  const card = document.getElementById(cardId);
+  const badge = document.getElementById(badgeId);
+  if(!card || !badge) return;
+  card.classList.remove('required-field');
+  card.classList.add('filled');
+  badge.className = 'filled-badge';
+  badge.textContent = '✓';
+}
+
+function markRequired(cardId, badgeId) {
+  const card = document.getElementById(cardId);
+  const badge = document.getElementById(badgeId);
+  if(!card || !badge) return;
+  card.classList.add('required-field');
+  card.classList.remove('filled');
+  badge.className = 'req-badge';
+  badge.textContent = 'REQUIRED';
+}
+
+// ── LOG FORM ──
+function renderLogForm() {
+  renderRadios('location-list', locs, 'loc', 'fc-loc', 'b-loc');
+  renderRadios('subject-list', subjs, 'subj', 'fc-subj', 'b-subj');
+}
+
+function renderRadios(containerId, items, name, cardId, badgeId) {
+  document.getElementById(containerId).innerHTML =
+    items.map(item => `
+      <div class="radio-item" onclick="selectRadio(this,'${name}','${item.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${cardId}','${badgeId}')">
+        <div class="radio-circle"></div>
+        <span class="radio-text">${item}</span>
+      </div>`).join('') +
+    `<div class="radio-item" onclick="selectRadio(this,'${name}','__other__','${cardId}','${badgeId}')">
+      <div class="radio-circle"></div>
+      <span class="radio-text" style="color:var(--text3)">Other:</span>
+      <input class="other-field" type="text" id="${name}-other" placeholder="Type here…"
+        onclick="event.stopPropagation();selectRadio(this.closest('.radio-item'),'${name}','__other__','${cardId}','${badgeId}')">
+    </div>`;
+}
+
+function selectRadio(el, name, val, cardId, badgeId) {
+  document.querySelectorAll(`#${el.parentElement.id} .radio-item`).forEach(r => r.classList.remove('sel'));
+  el.classList.add('sel');
+  markFilled(cardId, badgeId);
+}
+
+function getRadio(name) {
+  const container = document.getElementById(name==='loc'?'location-list':'subject-list');
+  const sel = container?.querySelector('.radio-item.sel');
+  if(!sel) return '';
+  const otherInput = sel.querySelector('.other-field');
+  if(otherInput) return otherInput.value.trim();
+  return sel.querySelector('.radio-text')?.textContent.trim() || '';
+}
+
+// ── SUBMIT ──
+async function submitLog() {
+  const date    = document.getElementById('f-date').value;
+  const time    = document.getElementById('f-time').value;
+  const loc     = getRadio('loc');
+  const subj    = getRadio('subj');
+  const parts   = document.getElementById('f-parts').value;
+  const remarks = document.getElementById('f-remarks').value.trim();
+
+  let hasError = false;
+  if(!date)  { markRequired('fc-date','b-date');   hasError=true; }
+  if(!time)  { markRequired('fc-time','b-time');   hasError=true; }
+  if(!loc)   { markRequired('fc-loc','b-loc');     hasError=true; }
+  if(!subj)  { markRequired('fc-subj','b-subj');   hasError=true; }
+  if(!parts) { markRequired('fc-parts','b-parts'); hasError=true; }
+
+  if(hasError) {
+    document.getElementById('req-notice').style.display = 'flex';
+    document.getElementById('req-notice').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  document.getElementById('req-notice').style.display = 'none';
+
+  const btn = document.getElementById('save-btn');
+  const icon = document.getElementById('save-icon');
+  const txt  = document.getElementById('save-text');
+  btn.disabled = true;
+  btn.classList.add('saving');
+  icon.innerHTML = '<div class="spinner"></div>';
+  txt.textContent = 'Saving…';
+  setSyncState('busy','Saving…');
+
+  const entry = {date, time, loc, subj, parts, remarks, loggedAt: new Date().toISOString()};
+
+  // Optimistic local save immediately
+  sessions.unshift(entry);
+  persist();
+  showToast('✓ Saved locally — syncing to Sheet…', 'success');
+  resetForm();
+  btn.disabled = false;
+  btn.classList.remove('saving');
+  icon.textContent = '💾';
+  txt.textContent = 'Save to Google Sheet';
+
+  // Background sync
+  try {
+    const res = await sheetCall({action:'addSession', ...entry});
+    if(res.ok) {
+      if(res.sheetUrl) { sheetUrl=res.sheetUrl; localStorage.setItem('st_sheet_url',sheetUrl); }
+      setSyncState('ok','Saved to Sheet ✓');
+      showToast('✓ Synced to Google Sheet!', 'success');
+    } else {
+      setSyncState('err','Sheet sync failed');
+      showToast('⚠ Local save OK, sheet sync failed', 'error');
+    }
+  } catch(e) {
+    setSyncState('err','Sheet sync failed');
+    showToast('⚠ Local save OK, sheet sync failed', 'error');
+  }
+}
+
+function resetForm() {
+  document.getElementById('f-date').value = todayStr();
+  document.getElementById('f-time').value = '';
+  document.getElementById('f-remarks').value = '';
+  document.querySelectorAll('.radio-item').forEach(r => r.classList.remove('sel'));
+  document.querySelectorAll('.other-field').forEach(i => i.value = '');
+  partsValue = '';
+  document.getElementById('f-parts').value = '';
+  document.getElementById('f-parts-range').value = 1;
+  document.getElementById('parts-val').textContent = '1';
+  document.getElementById('parts-display').textContent = '— Select below —';
+  document.getElementById('none-btn').classList.remove('active');
+  // Reset field states
+  markFilled('fc-date','b-date'); // date pre-filled
+  ['fc-time','b-time','fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'].forEach((id,i) => {
+    if(i%2===0) markRequired(id, ['fc-time','b-time','fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'][i+1]);
+  });
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const fS = document.getElementById('filter-subj').value;
+  const fL = document.getElementById('filter-loc').value;
+
+  const allS = [...new Set(sessions.map(s=>s.subj).filter(Boolean))].sort();
+  const allL = [...new Set(sessions.map(s=>s.loc).filter(Boolean))].sort();
+  document.getElementById('filter-subj').innerHTML = '<option value="">All subjects</option>' + allS.map(s=>`<option${s===fS?` selected`:''}>${s}</option>`).join('');
+  document.getElementById('filter-loc').innerHTML = '<option value="">All locations</option>' + allL.map(l=>`<option${l===fL?` selected`:''}>${l}</option>`).join('');
+
+  // Stats
+  const total = sessions.length;
+  const sc = {}; sessions.forEach(s=>{if(s.subj) sc[s.subj]=(sc[s.subj]||0)+1;});
+  const top = Object.entries(sc).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">Sessions</div></div>
+    <div class="stat-box"><div class="stat-num">${Object.keys(sc).length}</div><div class="stat-lbl">Subjects</div></div>
+    <div class="stat-box"><div class="stat-num">${[...new Set(sessions.map(s=>s.loc).filter(Boolean))].length}</div><div class="stat-lbl">Locations</div></div>`;
+
+  // Insight box when subject selected
+  const insightBox = document.getElementById('insight-box');
+  if(fS) {
+    const subjSessions = sessions.filter(s=>s.subj===fS);
+    const partNums = [];
+    subjSessions.forEach(s => {
+      if(s.parts && s.parts !== 'None') {
+        const n = parseInt(s.parts);
+        if(!isNaN(n)) partNums.push(n);
+      }
+    });
+    if(partNums.length) {
+      partNums.sort((a,b)=>a-b);
+      const mn = Math.min(...partNums), mx = Math.max(...partNums);
+
+      // Continuous range detection
+      const consecutive = [];
+      const isolated = [];
+      const used = new Set();
+      // find largest range of consecutive parts
+      let i=0;
+      while(i<partNums.length) {
+        let j=i;
+        while(j+1<partNums.length && partNums[j+1]===partNums[j]+1) j++;
+        if(j-i>=2) { // 3+ consecutive = a range
+          for(let k=i;k<=j;k++) used.add(partNums[k]);
+          consecutive.push({from:partNums[i],to:partNums[j]});
+        }
+        i=j+1;
+      }
+      partNums.forEach(n=>{ if(!used.has(n)) isolated.push(n); });
+
+      const rangeHTML = consecutive.map(r=>`<span class="ins-badge ins-range">${r.from}–${r.to}</span>`).join('');
+      const isoHTML  = [...new Set(isolated)].map(n=>`<span class="ins-badge ins-special">${n}</span>`).join('');
+
+      document.getElementById('insight-range').innerHTML = rangeHTML || `<span class="ins-badge ins-range">${mn}–${mx}</span>`;
+      document.getElementById('special-label').style.display = isoHTML ? '' : 'none';
+      document.getElementById('insight-specials').innerHTML = isoHTML;
+      document.getElementById('insight-total').textContent = `${subjSessions.length} session${subjSessions.length>1?'s':''} logged for "${fS}"`;
+      insightBox.classList.add('visible');
+    } else {
+      insightBox.classList.remove('visible');
+    }
+  } else {
+    insightBox.classList.remove('visible');
+  }
+
+  let filtered = sessions.filter(s=>(!fS||s.subj===fS)&&(!fL||s.loc===fL));
+  if(!filtered.length) {
+    document.getElementById('history-list').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">No sessions found.<br>Log your first session!</div></div>`;
+    return;
+  }
+  document.getElementById('history-list').innerHTML = filtered.map(s=>`
+    <div class="entry-card">
+      <div class="entry-top">
+        <div class="entry-subj">${s.subj||'—'}</div>
+        <div class="entry-date">${s.date||''}</div>
+      </div>
+      <div class="entry-tags">
+        <span class="tag time">${s.time||''}</span>
+        <span class="tag loc">${s.loc||''}</span>
+      </div>
+      <div class="entry-parts">Parts played: <span>${s.parts||'—'}</span></div>
+      ${s.remarks?`<div class="entry-remark">"${s.remarks}"</div>`:''}
+    </div>`).join('');
+}
+
+// ── MANAGE ──
+function renderManage() {
+  document.getElementById('loc-list').innerHTML = locs.map((l,i)=>`
+    <div class="manage-item"><span class="manage-name">${l}</span><button class="rm-btn" onclick="removeItem('loc',${i})">Remove</button></div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:8px 0">No locations added yet.</div>';
+  document.getElementById('subj-list').innerHTML = subjs.map((s,i)=>`
+    <div class="manage-item"><span class="manage-name">${s}</span><button class="rm-btn" onclick="removeItem('subj',${i})">Remove</button></div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:8px 0">No subjects added yet.</div>';
+}
+
+async function addItem(type) {
+  const id = type==='loc'?'new-loc':'new-subj';
+  const val = document.getElementById(id).value.trim();
+  if(!val) return;
+  if(type==='loc') locs.push(val); else subjs.push(val);
+  document.getElementById(id).value = '';
+  persist(); renderManage(); renderLogForm();
+  try { await sheetCall({action:'saveConfig',locs,subjs}); showToast('✓ Saved to sheet','success'); }
+  catch(e) { showToast('Saved locally',''); }
+}
+
+async function removeItem(type,idx) {
+  if(type==='loc') locs.splice(idx,1); else subjs.splice(idx,1);
+  persist(); renderManage(); renderLogForm();
+  try { await sheetCall({action:'saveConfig',locs,subjs}); } catch(e){}
+}
+
+// ── EXPORT / SUMMARY ──
+function renderSummary() {
+  const sc = {};
+  sessions.forEach(s => {
+    if(!s.subj) return;
+    if(!sc[s.subj]) sc[s.subj] = {count:0, parts:[]};
+    sc[s.subj].count++;
+    if(s.parts && s.parts!=='None') sc[s.subj].parts.push(s.parts);
+  });
+  const entries = Object.entries(sc).sort((a,b)=>b[1].count-a[1].count);
+  if(!entries.length) { document.getElementById('summary-table').innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No sessions logged yet.</div>'; return; }
+  document.getElementById('summary-table').innerHTML = entries.map(([subj,info])=>`
+    <div class="summary-row">
+      <div>
+        <div class="summary-subj">${subj}</div>
+        ${info.parts.length?`<div class="summary-parts">Parts: ${info.parts.join(', ')}</div>`:''}
+      </div>
+      <div class="summary-count">${info.count} session${info.count>1?'s':''}</div>
+    </div>`).join('');
+}
+
+function openSheet() {
+  if(sheetUrl) window.open(sheetUrl,'_blank');
+  else showToast('Sheet URL not loaded — tap Refresh first','error');
+}
+
+function exportCSV() {
+  if(!sessions.length) { showToast('No data to export','error'); return; }
+  const header = 'Date,Session Time,Location,DVD Subject,DVD Parts,Remarks';
+  const rows = sessions.map(s=>[s.date,s.time,`"${(s.loc||'').replace(/"/g,'""')}"`,`"${(s.subj||'').replace(/"/g,'""')}"`,`"${(s.parts||'').replace(/"/g,'""')}"`,`"${(s.remarks||'').replace(/"/g,'""')}"`].join(','));
+  const blob = new Blob([[header,...rows].join('\n')],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='satsang_sessions.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('✓ CSV downloaded','success');
+}
+
+// ── TABS ──
+function showTab(name) {
+  ['log','history','manage','export'].forEach((t,i) => {
+    document.getElementById('page-'+t).classList.toggle('visible',t===name);
+    document.querySelectorAll('.nav-btn')[i].classList.toggle('active',t===name);
+  });
+  if(name==='history') renderHistory();
+  if(name==='manage')  renderManage();
+  if(name==='export')  renderSummary();
+  document.querySelector('.scroll-area').scrollTop = 0;
+}
+
+// ── UTILS ──
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT)
+    .then(()=>showToast('✓ Script copied!','success'))
+    .catch(()=>showToast('Select & copy the text manually','error'));
+}
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type?' '+type:'');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
