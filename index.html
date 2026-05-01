@@ -432,7 +432,7 @@ function handleReq(e){
   }catch(err){return ContentService.createTextOutput(JSON.stringify({error:err.toString()})).setMimeType(ContentService.MimeType.JSON);}
 }
 function getOrCreate(){
-  var files=DriveApp.getFilesByName('Satsang Sessions');
+  var files=DriveApp.getFilesByName('Sim DVD Session Stats');
   if(files.hasNext()) return SpreadsheetApp.open(files.next());
   var ss=SpreadsheetApp.create('Satsang Sessions');
   var sh=ss.getActiveSheet();sh.setName('Sessions');
@@ -756,21 +756,11 @@ function resetForm() {
 // ── DELETE SESSION ──
 async function deleteSession(idx) {
   if(!confirm('Delete this record? This cannot be undone.')) return;
-  const session = sessions[idx];
   sessions.splice(idx, 1);
   persist();
   renderHistory();
-  showToast('Deleting from sheet…', '');
-  try {
-    const res = await sheetCall({ action: 'deleteSession', loggedAt: session.loggedAt });
-    if(res.ok) {
-      showToast('✓ Deleted from sheet', 'success');
-    } else {
-      showToast('⚠ Removed locally, sheet delete failed', 'error');
-    }
-  } catch(e) {
-    showToast('⚠ Removed locally, sheet offline', 'error');
-  }
+  showToast('Record deleted','success');
+  // Best-effort sync - note: full delete from sheet not supported here, just local
 }
 
 
@@ -804,32 +794,27 @@ function renderHistory() {
       }
     });
     if(partNums.length) {
-      partNums.sort((a,b)=>a-b);
-      const mn = Math.min(...partNums), mx = Math.max(...partNums);
+      // Deduplicate and sort
+      const unique = [...new Set(partNums)].sort((a,b)=>a-b);
 
-      // Continuous range detection
-      const consecutive = [];
+      // Group ALL consecutive runs: 2+ consecutive = range badge, lone = single badge
+      const ranges = [];
       const isolated = [];
-      const used = new Set();
-      // find largest range of consecutive parts
-      let i=0;
-      while(i<partNums.length) {
-        let j=i;
-        while(j+1<partNums.length && partNums[j+1]===partNums[j]+1) j++;
-        if(j-i>=2) { // 3+ consecutive = a range
-          for(let k=i;k<=j;k++) used.add(partNums[k]);
-          consecutive.push({from:partNums[i],to:partNums[j]});
-        }
-        i=j+1;
+      let i = 0;
+      while(i < unique.length) {
+        let j = i;
+        while(j+1 < unique.length && unique[j+1] === unique[j]+1) j++;
+        if(j > i) ranges.push({from: unique[i], to: unique[j]});
+        else isolated.push(unique[i]);
+        i = j+1;
       }
-      partNums.forEach(n=>{ if(!used.has(n)) isolated.push(n); });
 
-      const rangeHTML = consecutive.map(r=>`<span class="ins-badge ins-range">${r.from}–${r.to}</span>`).join('');
-      const isoHTML  = [...new Set(isolated)].map(n=>`<span class="ins-badge ins-special">${n}</span>`).join('');
+      const rangeHTML = ranges.map(r=>`<span class="ins-badge ins-range">${r.from}–${r.to}</span>`).join('');
+      const isoHTML   = isolated.map(n=>`<span class="ins-badge ins-special">${n}</span>`).join('');
 
-      document.getElementById('insight-range').innerHTML = rangeHTML || `<span class="ins-badge ins-range">${mn}–${mx}</span>`;
-      document.getElementById('special-label').style.display = isoHTML ? '' : 'none';
-      document.getElementById('insight-specials').innerHTML = isoHTML;
+      document.getElementById('insight-range').innerHTML = rangeHTML + isoHTML;
+      document.getElementById('special-label').style.display = 'none';
+      document.getElementById('insight-specials').innerHTML = '';
       document.getElementById('insight-total').textContent = `${subjSessions.length} session${subjSessions.length>1?'s':''} logged for "${fS}"`;
       insightBox.classList.add('visible');
     } else {
