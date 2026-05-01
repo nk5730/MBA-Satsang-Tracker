@@ -208,8 +208,8 @@ details[open]>summary::before{transform:rotate(90deg);}
 .summary-count{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--saffron);}
 .summary-parts{font-size:11px;color:var(--text3);text-align:right;}
 
-.del-entry-btn{background:none;border:none;font-size:15px;cursor:pointer;padding:2px 4px;border-radius:6px;opacity:0.5;transition:opacity 0.15s,background 0.15s;}
-.del-entry-btn:active{opacity:1;background:var(--required-bg);}
+.del-entry-btn{background:#FFF0F0;border:1.5px solid #FFCDD2;color:var(--required);font-size:13px;cursor:pointer;padding:5px 10px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:0.2px;transition:background 0.15s,transform 0.1s;white-space:nowrap;}
+.del-entry-btn:active{background:#FFCDD2;transform:scale(0.95);}
 
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(30px);background:#1A1208;color:#fff;padding:12px 22px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:88vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.25);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -427,6 +427,7 @@ function handleReq(e){
     else if(b.action==='getSessions') r=getSessions(ss);
     else if(b.action==='getConfig') r=getConfig(ss);
     else if(b.action==='saveConfig') r=saveConfig(ss,b);
+    else if(b.action==='deleteSession') r=deleteSession(ss,b);
     else r={error:'Unknown action'};
     return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
   }catch(err){return ContentService.createTextOutput(JSON.stringify({error:err.toString()})).setMimeType(ContentService.MimeType.JSON);}
@@ -467,6 +468,17 @@ function getConfig(ss){
     if(d[i][0]==='sheetUrl') out.sheetUrl=d[i][1];
   }
   return{ok:true,...out};
+}
+function deleteSession(ss,b){
+  var sh=ss.getSheetByName('Sessions')||ss.getSheets()[0];
+  var d=sh.getDataRange().getValues();
+  for(var i=1;i<d.length;i++){
+    if(String(d[i][6])===String(b.loggedAt)){
+      sh.deleteRow(i+1);
+      return{ok:true};
+    }
+  }
+  return{ok:false,error:'Row not found'};
 }
 function saveConfig(ss,b){
   var cfg=ss.getSheetByName('Config');
@@ -673,6 +685,14 @@ function getRadio(name) {
   return sel.querySelector('.radio-text')?.textContent.trim() || '';
 }
 
+// ── DATE FORMAT ──
+function formatDate(d) {
+  if(!d) return '';
+  const parts = d.split('-');
+  if(parts.length !== 3) return d;
+  return parts[2] + '/' + parts[1] + '/' + parts[0]; // DD/MM/YYYY
+}
+
 // ── SUBMIT ──
 async function submitLog() {
   const date    = document.getElementById('f-date').value;
@@ -704,12 +724,13 @@ async function submitLog() {
   txt.textContent = 'Saving…';
   setSyncState('busy','Saving…');
 
-  const entry = {date, time, loc, subj, parts, remarks, loggedAt: new Date().toISOString()};
+  const entry = {date: formatDate(date), time, loc, subj, parts, remarks, loggedAt: new Date().toISOString()};
 
   // Optimistic local save immediately
   sessions.unshift(entry);
   persist();
-  showToast('✓ Saved locally — syncing to Sheet…', 'success');
+  const partsTxt = parts === 'None' ? 'None' : `Part ${parts}`;
+  showToast(`✓ Saved — ${subj} · ${partsTxt}`, 'success');
   resetForm();
   btn.disabled = false;
   btn.classList.remove('saving');
@@ -756,11 +777,21 @@ function resetForm() {
 // ── DELETE SESSION ──
 async function deleteSession(idx) {
   if(!confirm('Delete this record? This cannot be undone.')) return;
+  const session = sessions[idx];
   sessions.splice(idx, 1);
   persist();
   renderHistory();
-  showToast('Record deleted','success');
-  // Best-effort sync - note: full delete from sheet not supported here, just local
+  showToast('Deleting from sheet…', '');
+  try {
+    const res = await sheetCall({ action: 'deleteSession', loggedAt: session.loggedAt });
+    if(res.ok) {
+      showToast('✓ Deleted from sheet', 'success');
+    } else {
+      showToast('⚠ Removed locally, sheet delete failed', 'error');
+    }
+  } catch(e) {
+    showToast('⚠ Removed locally, sheet offline', 'error');
+  }
 }
 
 
@@ -837,7 +868,7 @@ function renderHistory() {
         <div class="entry-subj">${s.subj||'—'}</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="entry-date">${s.date||''}</div>
-          <button class="del-entry-btn" onclick="deleteSession(${realIdx})" title="Delete record">🗑</button>
+          <button class="del-entry-btn" onclick="deleteSession(${realIdx})" title="Delete record">🗑 Delete</button>
         </div>
       </div>
       <div class="entry-tags">
