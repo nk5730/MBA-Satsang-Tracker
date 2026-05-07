@@ -208,7 +208,9 @@ details[open]>summary::before{transform:rotate(90deg);}
 .summary-count{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--saffron);}
 .summary-parts{font-size:11px;color:var(--text3);text-align:right;}
 
-/* ── TOAST ── */
+.del-entry-btn{background:#FFF0F0;border:1.5px solid #FFCDD2;color:var(--required);font-size:13px;cursor:pointer;padding:5px 10px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:0.2px;transition:background 0.15s,transform 0.1s;white-space:nowrap;}
+.del-entry-btn:active{background:#FFCDD2;transform:scale(0.95);}
+
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(30px);background:#1A1208;color:#fff;padding:12px 22px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:88vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.25);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.success{background:var(--green);}
@@ -273,9 +275,9 @@ details[open]>summary::before{transform:rotate(90deg);}
       <div id="req-notice" class="required-notice" style="display:none;">⚠ Please fill all fields marked <strong>REQUIRED</strong> before saving.</div>
 
       <!-- DATE -->
-      <div class="field-card required-field" id="fc-date">
+      <div class="field-card required-field" id="fc-date" onclick="document.getElementById('f-date').showPicker&&document.getElementById('f-date').showPicker()" style="cursor:pointer;">
         <div class="field-header"><span class="field-label">📅 Date <span class="req-star">★</span></span><span class="req-badge" id="b-date">REQUIRED</span></div>
-        <div class="field-body"><input class="f-input" type="date" id="f-date" onchange="markFilled('fc-date','b-date')"></div>
+        <div class="field-body"><input class="f-input" type="date" id="f-date" onchange="markFilled('fc-date','b-date')" onclick="event.stopPropagation()" style="cursor:pointer;"></div>
       </div>
 
       <!-- SESSION TIME -->
@@ -283,8 +285,7 @@ details[open]>summary::before{transform:rotate(90deg);}
         <div class="field-header"><span class="field-label">🕐 Session Time <span class="req-star">★</span></span><span class="req-badge" id="b-time">REQUIRED</span></div>
         <div class="field-body">
           <select class="f-input f-select" id="f-time" onchange="markFilled('fc-time','b-time')">
-            <option value="">Choose time of day…</option>
-            <option>Morning</option><option>Afternoon</option><option>Evening</option><option>Night</option>
+            <option value="Morning" selected>Morning</option><option value="Evening">Evening</option>
           </select>
         </div>
       </div>
@@ -306,16 +307,13 @@ details[open]>summary::before{transform:rotate(90deg);}
         <div class="field-header"><span class="field-label">🎬 DVD Parts Played <span class="req-star">★</span></span><span class="req-badge" id="b-parts">REQUIRED</span></div>
         <div class="field-body">
           <div class="parts-picker">
-            <div class="parts-display" id="parts-display">— Select below —</div>
-            <div class="parts-row">
+            <div class="parts-display" id="parts-display">— Enter part number or tap None —</div>
+            <div class="parts-row" style="gap:10px;align-items:center;">
               <button class="parts-none-btn" id="none-btn" onclick="setPartsNone()">None</button>
-              <div class="range-wrap">
-                <input class="parts-range" type="range" id="f-parts-range" min="1" max="1000" value="1" oninput="updateParts(this.value)">
-              </div>
-              <div class="parts-val" id="parts-val">1</div>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:0 2px;font-size:11px;color:var(--text3);font-weight:600;">
-              <span>1</span><span>250</span><span>500</span><span>750</span><span>1000</span>
+              <input class="f-input" type="number" id="f-parts-text" min="1" max="9999" placeholder="Part number…"
+                oninput="updatePartsFromText(this.value)"
+                style="flex:1;font-size:18px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--saffron);text-align:center;"
+                inputmode="numeric" pattern="[0-9]*">
             </div>
           </div>
           <input type="hidden" id="f-parts" value="">
@@ -429,6 +427,7 @@ function handleReq(e){
     else if(b.action==='getSessions') r=getSessions(ss);
     else if(b.action==='getConfig') r=getConfig(ss);
     else if(b.action==='saveConfig') r=saveConfig(ss,b);
+    else if(b.action==='deleteSession') r=deleteSession(ss,b);
     else r={error:'Unknown action'};
     return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
   }catch(err){return ContentService.createTextOutput(JSON.stringify({error:err.toString()})).setMimeType(ContentService.MimeType.JSON);}
@@ -457,19 +456,18 @@ function getSessions(ss){
   var sh=ss.getSheetByName('Sessions')||ss.getSheets()[0];
   var d=sh.getDataRange().getValues(),rows=[];
   for(var i=1;i<d.length;i++){
-    var raw=d[i][0];
+    var rawDate=d[i][0];
     var dateStr='';
-    if(raw instanceof Date){
-      var yr=raw.getFullYear();
-      var mo=String(raw.getMonth()+1).padStart(2,'0');
-      var dy=String(raw.getDate()).padStart(2,'0');
+    if(rawDate instanceof Date){
+      var yr=rawDate.getFullYear();
+      var mo=String(rawDate.getMonth()+1).padStart(2,'0');
+      var dy=String(rawDate.getDate()).padStart(2,'0');
       dateStr=yr+'-'+mo+'-'+dy;
     } else {
-      dateStr=String(raw).replace(/T.*/,'');
+      dateStr=String(rawDate).replace(/T.*/,'').trim();
     }
-    var timeRaw=d[i][1];
-    var timeStr=typeof timeRaw==='string'?timeRaw.trim():String(timeRaw);
-    // If time looks like a Date or timestamp, discard it
+    var rawTime=d[i][1];
+    var timeStr=typeof rawTime==='string'?rawTime.trim():String(rawTime);
     if(timeStr.indexOf('T')>-1||timeStr.indexOf('GMT')>-1||timeStr.indexOf('00:00:00')>-1) timeStr='';
     rows.push({date:dateStr,time:timeStr,loc:d[i][2],subj:d[i][3],parts:String(d[i][4]),remarks:d[i][5],loggedAt:d[i][6]});
   }
@@ -485,6 +483,17 @@ function getConfig(ss){
     if(d[i][0]==='sheetUrl') out.sheetUrl=d[i][1];
   }
   return{ok:true,...out};
+}
+function deleteSession(ss,b){
+  var sh=ss.getSheetByName('Sessions')||ss.getSheets()[0];
+  var d=sh.getDataRange().getValues();
+  for(var i=1;i<d.length;i++){
+    if(String(d[i][6])===String(b.loggedAt)){
+      sh.deleteRow(i+1);
+      return{ok:true};
+    }
+  }
+  return{ok:false,error:'Row not found'};
 }
 function saveConfig(ss,b){
   var cfg=ss.getSheetByName('Config');
@@ -519,7 +528,8 @@ window.onload = function() {
   if(webAppUrl) { bootApp(); }
   else { document.getElementById('setup-screen').style.display=''; }
   document.getElementById('f-date').value = todayStr();
-  markFilled('fc-date','b-date'); // date pre-filled
+  markFilled('fc-date','b-date');
+  markFilled('fc-time','b-time'); // Morning is default
 };
 
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
@@ -529,6 +539,7 @@ function bootApp() {
   document.getElementById('app').classList.add('visible');
   document.getElementById('f-date').value = todayStr();
   markFilled('fc-date','b-date');
+  markFilled('fc-time','b-time'); // Morning is default
   renderLogForm();
   loadSheet();
 }
@@ -604,20 +615,30 @@ async function refreshData() {
 }
 
 // ── PARTS PICKER ──
-function updateParts(val) {
-  partsValue = val;
-  document.getElementById('f-parts').value = val;
-  document.getElementById('parts-val').textContent = val;
-  document.getElementById('parts-display').textContent = 'Part ' + val;
+function updatePartsFromText(val) {
+  const n = parseInt(val);
+  if(!val || isNaN(n) || n < 1) {
+    partsValue = '';
+    document.getElementById('f-parts').value = '';
+    document.getElementById('parts-display').textContent = '— Enter part number or tap None —';
+    document.getElementById('none-btn').classList.remove('active');
+    return;
+  }
+  partsValue = String(n);
+  document.getElementById('f-parts').value = partsValue;
+  document.getElementById('parts-display').textContent = 'Part ' + n;
   document.getElementById('none-btn').classList.remove('active');
   markFilled('fc-parts','b-parts');
 }
+
+function updateParts(val) { updatePartsFromText(val); } // legacy compat
 
 function setPartsNone() {
   partsValue = 'None';
   document.getElementById('f-parts').value = 'None';
   document.getElementById('parts-display').textContent = 'None (No parts played)';
-  document.getElementById('parts-val').textContent = '—';
+  const ti = document.getElementById('f-parts-text');
+  if(ti) ti.value = '';
   document.getElementById('none-btn').classList.add('active');
   markFilled('fc-parts','b-parts');
 }
@@ -651,16 +672,15 @@ function renderLogForm() {
 }
 
 function autoSelectLocation() {
-  // Find and click "Aaradhna Hall-1" if it exists in the list
-  const allLocs = document.querySelectorAll('#location-list .radio-item');
-  for(const item of allLocs) {
+  const items = document.querySelectorAll('#location-list .radio-item');
+  for(const item of items) {
     const txt = item.querySelector('.radio-text');
     if(txt && txt.textContent.trim() === 'Aaradhna Hall-1') {
       item.click();
       return;
     }
   }
-  // If not found, don't auto-select anything
+  // Aaradhna Hall-1 not found — leave unselected
 }
 
 function renderRadios(containerId, items, name, cardId, badgeId) {
@@ -693,6 +713,14 @@ function getRadio(name) {
   return sel.querySelector('.radio-text')?.textContent.trim() || '';
 }
 
+// ── DATE FORMAT ──
+function formatDate(d) {
+  if(!d) return '';
+  const parts = d.split('-');
+  if(parts.length !== 3) return d;
+  return parts[2] + '/' + parts[1] + '/' + parts[0]; // DD/MM/YYYY
+}
+
 // ── SUBMIT ──
 async function submitLog() {
   const date    = document.getElementById('f-date').value;
@@ -704,7 +732,6 @@ async function submitLog() {
 
   let hasError = false;
   if(!date)  { markRequired('fc-date','b-date');   hasError=true; }
-  if(!time)  { markRequired('fc-time','b-time');   hasError=true; }
   if(!loc)   { markRequired('fc-loc','b-loc');     hasError=true; }
   if(!subj)  { markRequired('fc-subj','b-subj');   hasError=true; }
   if(!parts) { markRequired('fc-parts','b-parts'); hasError=true; }
@@ -725,12 +752,13 @@ async function submitLog() {
   txt.textContent = 'Saving…';
   setSyncState('busy','Saving…');
 
-  const entry = {date, time, loc, subj, parts, remarks, loggedAt: new Date().toISOString()};
+  const entry = {date: formatDate(date), time, loc, subj, parts, remarks, loggedAt: new Date().toISOString()};
 
   // Optimistic local save immediately
   sessions.unshift(entry);
   persist();
-  showToast('✓ Saved locally — syncing to Sheet…', 'success');
+  const partsTxt = parts === 'None' ? 'None' : `Part ${parts}`;
+  showToast(`✓ Saved — ${subj} · ${partsTxt}`, 'success');
   resetForm();
   btn.disabled = false;
   btn.classList.remove('saving');
@@ -756,55 +784,47 @@ async function submitLog() {
 
 function resetForm() {
   document.getElementById('f-date').value = todayStr();
-  document.getElementById('f-time').value = '';
+  document.getElementById('f-time').value = 'Morning';
   document.getElementById('f-remarks').value = '';
   document.querySelectorAll('.radio-item').forEach(r => r.classList.remove('sel'));
   document.querySelectorAll('.other-field').forEach(i => i.value = '');
   partsValue = '';
   document.getElementById('f-parts').value = '';
-  document.getElementById('f-parts-range').value = 1;
-  document.getElementById('parts-val').textContent = '1';
-  document.getElementById('parts-display').textContent = '— Select below —';
+  const ti = document.getElementById('f-parts-text');
+  if(ti) ti.value = '';
+  document.getElementById('parts-display').textContent = '— Enter part number or tap None —';
   document.getElementById('none-btn').classList.remove('active');
   // Reset field states
   markFilled('fc-date','b-date'); // date pre-filled
-  ['fc-time','b-time','fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'].forEach((id,i) => {
-    if(i%2===0) markRequired(id, ['fc-time','b-time','fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'][i+1]);
+  markFilled('fc-time','b-time'); // time pre-filled (Morning default)
+  ['fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'].forEach((id,i) => {
+    if(i%2===0) markRequired(id, ['fc-loc','b-loc','fc-subj','b-subj','fc-parts','b-parts'][i+1]);
   });
-  // Re-select Aaradhna Hall-1 by default if present
+  // Auto-select Aaradhna Hall-1 if available
   autoSelectLocation();
 }
 
-// ── DATE / TIME HELPERS ──
-function formatDate(raw) {
-  if(!raw) return '';
-  const s = String(raw).replace(/T.*/,'').trim();
-  const parts = s.split('-');
-  if(parts.length === 3) {
-    const [y, m, d] = parts;
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const mi = parseInt(m, 10) - 1;
-    return `${parseInt(d,10)} ${months[mi]||m} ${y}`;
-  }
+// ── DELETE SESSION ──
+async function deleteSession(idx) {
+  if(!confirm('Delete this record? This cannot be undone.')) return;
+  const session = sessions[idx];
+  sessions.splice(idx, 1);
+  persist();
+  renderHistory();
+  showToast('Deleting from sheet…', '');
   try {
-    const dt = new Date(s + 'T00:00:00Z');
-    if(!isNaN(dt)) {
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${dt.getUTCDate()} ${months[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+    const res = await sheetCall({ action: 'deleteSession', loggedAt: session.loggedAt });
+    if(res.ok) {
+      showToast('✓ Deleted from sheet', 'success');
+    } else {
+      showToast('⚠ Removed locally, sheet delete failed', 'error');
     }
-  } catch(e){}
-  return raw;
+  } catch(e) {
+    showToast('⚠ Removed locally, sheet offline', 'error');
+  }
 }
 
-function formatTime(raw) {
-  if(!raw) return '';
-  const s = String(raw).trim();
-  if(['Morning','Afternoon','Evening','Night'].includes(s)) return s;
-  if(s.includes('T') || s.includes('Z') || s.includes('GMT') || s.includes(':')) return '';
-  return s;
-}
 
-// ── HISTORY ──
 function renderHistory() {
   const fS = document.getElementById('filter-subj').value;
   const fL = document.getElementById('filter-loc').value;
@@ -835,32 +855,27 @@ function renderHistory() {
       }
     });
     if(partNums.length) {
-      partNums.sort((a,b)=>a-b);
-      const mn = Math.min(...partNums), mx = Math.max(...partNums);
+      // Deduplicate and sort
+      const unique = [...new Set(partNums)].sort((a,b)=>a-b);
 
-      // Continuous range detection
-      const consecutive = [];
+      // Group ALL consecutive runs: 2+ consecutive = range badge, lone = single badge
+      const ranges = [];
       const isolated = [];
-      const used = new Set();
-      // find largest range of consecutive parts
-      let i=0;
-      while(i<partNums.length) {
-        let j=i;
-        while(j+1<partNums.length && partNums[j+1]===partNums[j]+1) j++;
-        if(j-i>=2) { // 3+ consecutive = a range
-          for(let k=i;k<=j;k++) used.add(partNums[k]);
-          consecutive.push({from:partNums[i],to:partNums[j]});
-        }
-        i=j+1;
+      let i = 0;
+      while(i < unique.length) {
+        let j = i;
+        while(j+1 < unique.length && unique[j+1] === unique[j]+1) j++;
+        if(j > i) ranges.push({from: unique[i], to: unique[j]});
+        else isolated.push(unique[i]);
+        i = j+1;
       }
-      partNums.forEach(n=>{ if(!used.has(n)) isolated.push(n); });
 
-      const rangeHTML = consecutive.map(r=>`<span class="ins-badge ins-range">${r.from}–${r.to}</span>`).join('');
-      const isoHTML  = [...new Set(isolated)].map(n=>`<span class="ins-badge ins-special">${n}</span>`).join('');
+      const rangeHTML = ranges.map(r=>`<span class="ins-badge ins-range">${r.from}–${r.to}</span>`).join('');
+      const isoHTML   = isolated.map(n=>`<span class="ins-badge ins-special">${n}</span>`).join('');
 
-      document.getElementById('insight-range').innerHTML = rangeHTML || `<span class="ins-badge ins-range">${mn}–${mx}</span>`;
-      document.getElementById('special-label').style.display = isoHTML ? '' : 'none';
-      document.getElementById('insight-specials').innerHTML = isoHTML;
+      document.getElementById('insight-range').innerHTML = rangeHTML + isoHTML;
+      document.getElementById('special-label').style.display = 'none';
+      document.getElementById('insight-specials').innerHTML = '';
       document.getElementById('insight-total').textContent = `${subjSessions.length} session${subjSessions.length>1?'s':''} logged for "${fS}"`;
       insightBox.classList.add('visible');
     } else {
@@ -875,23 +890,24 @@ function renderHistory() {
     document.getElementById('history-list').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">No sessions found.<br>Log your first session!</div></div>`;
     return;
   }
-  document.getElementById('history-list').innerHTML = filtered.map(s=>{
-    const dispDate = formatDate(s.date);
-    const dispTime = formatTime(s.time);
+  document.getElementById('history-list').innerHTML = filtered.map((s,idx)=>{
+    const realIdx = sessions.indexOf(s);
     return `
-    <div class="entry-card">
+    <div class="entry-card" id="entry-${realIdx}">
       <div class="entry-top">
         <div class="entry-subj">${s.subj||'—'}</div>
-        <div class="entry-date">${dispDate}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="entry-date">${s.date||''}</div>
+          <button class="del-entry-btn" onclick="deleteSession(${realIdx})" title="Delete record">🗑 Delete</button>
+        </div>
       </div>
       <div class="entry-tags">
-        ${dispTime?`<span class="tag time">${dispTime}</span>`:''}
+        <span class="tag time">${s.time||''}</span>
         <span class="tag loc">${s.loc||''}</span>
       </div>
       <div class="entry-parts">Parts played: <span>${s.parts||'—'}</span></div>
       ${s.remarks?`<div class="entry-remark">"${s.remarks}"</div>`:''}
-    </div>`;
-  }).join('');
+    </div>`}).join('');
 }
 
 // ── MANAGE ──
