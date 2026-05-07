@@ -434,9 +434,9 @@ function handleReq(e){
   }catch(err){return ContentService.createTextOutput(JSON.stringify({error:err.toString()})).setMimeType(ContentService.MimeType.JSON);}
 }
 function getOrCreate(){
-  var files=DriveApp.getFilesByName('Satsang Sessions');
+  var files=DriveApp.getFilesByName('Sim DVD Session Stats');
   if(files.hasNext()) return SpreadsheetApp.open(files.next());
-  var ss=SpreadsheetApp.create('Satsang Sessions');
+  var ss=SpreadsheetApp.create('Sim DVD Session Stats');
   var sh=ss.getActiveSheet();sh.setName('Sessions');
   sh.appendRow(['Date','Session Time','Location','DVD Subject','DVD Parts','Remarks','Logged At']);
   sh.getRange(1,1,1,7).setFontWeight('bold').setBackground('#E8650A').setFontColor('#ffffff');
@@ -586,7 +586,7 @@ async function loadSheet() {
     }
     persist(); renderLogForm();
     setSyncState('ok','Sheet synced');
-    document.getElementById('sheet-label').textContent = 'Satsang Sessions · Google Sheet';
+    document.getElementById('sheet-label').textContent = 'Sim DVD Session Stats · Google Sheet';
   } catch(e) {
     setSyncState('err','Connection error');
     document.getElementById('sheet-label').textContent = 'Sheet error — check URL';
